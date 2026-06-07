@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Process Window Static Demo</title>
+    <style>
+      body {
+        margin: 0;
+        font-family: Inter, system-ui, sans-serif;
+        background: #f5f7fb;
+        color: #172033;
+      }
+      main {
+        max-width: 1180px;
+        margin: 0 auto;
+        padding: 24px;
+      }
+      header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+      }
+      h1 {
+        margin: 0 0 6px;
+        font-size: 28px;
+      }
+      p {
+        color: #5b6578;
+      }
+      button {
+        border: 1px solid #1f5eff;
+        border-radius: 6px;
+        background: #1f5eff;
+        color: white;
+        padding: 10px 14px;
+        font-weight: 700;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: 1.1fr 1fr;
+        gap: 18px;
+        margin-top: 20px;
+      }
+      .panel {
+        background: white;
+        border: 1px solid #d9deea;
+        border-radius: 6px;
+        padding: 16px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 14px;
+      }
+      th,
+      td {
+        padding: 8px;
+        border-bottom: 1px solid #edf0f6;
+        text-align: left;
+      }
+      tr[data-l1] {
+        cursor: pointer;
+      }
+      tr[data-l1]:hover {
+        background: #f3f6ff;
+      }
+      .notice {
+        margin-top: 18px;
+        padding: 12px;
+        background: white;
+        border: 1px solid #d9deea;
+        border-radius: 6px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <div>
+          <h1>Process Window Prototype</h1>
+          <p>Static fallback UI. FastAPI에서 ranking과 1D candidate를 가져옵니다.</p>
+        </div>
+        <button id="load">Load Analysis</button>
+      </header>
+      <div id="status" class="notice">FastAPI 서버가 http://127.0.0.1:8000 에서 실행 중이어야 합니다.</div>
+      <section class="grid">
+        <div class="panel">
+          <h2>L3별 Top Feature</h2>
+          <table>
+            <thead>
+              <tr><th>L3</th><th>L1</th><th>Score</th><th>R2</th></tr>
+            </thead>
+            <tbody id="ranking"></tbody>
+          </table>
+        </div>
+        <div class="panel">
+          <h2>1D Candidate</h2>
+          <div id="candidate">Ranking row를 선택하세요.</div>
+        </div>
+      </section>
+    </main>
+    <script>
+      const API = "http://127.0.0.1:8000/api";
+      const statusEl = document.querySelector("#status");
+      const rankingEl = document.querySelector("#ranking");
+      const candidateEl = document.querySelector("#candidate");
+
+      async function post(path, body) {
+        const response = await fetch(`${API}${path}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        if (!response.ok) throw new Error(`${path} failed: ${response.status}`);
+        return (await response.json()).data;
+      }
+
+      async function loadRanking() {
+        statusEl.textContent = "Loading ranking...";
+        const data = await post("/rank", {
+          product_id: "P_ALPHA",
+          selected_l3_items: ["l3_x", "l3_y", "l3_z", "l3_pm"],
+          selected_l1_features: ["cd_a", "thk_b", "ovl_c", "time_since_pm"],
+        });
+        rankingEl.innerHTML = "";
+        Object.entries(data.by_l3).forEach(([l3, rows]) => {
+          rows.slice(0, 4).forEach((row) => {
+            const tr = document.createElement("tr");
+            tr.dataset.l1 = row.l1_feature_name;
+            tr.dataset.l3 = l3;
+            tr.innerHTML = `<td>${l3}</td><td>${row.l1_feature_name}</td><td>${row.priority_score.toFixed(3)}</td><td>${row.u_safe_r2.toFixed(3)}</td>`;
+            tr.addEventListener("click", () => loadCandidate(row.l1_feature_name, l3));
+            rankingEl.appendChild(tr);
+          });
+        });
+        statusEl.textContent = "Ranking loaded. Row를 클릭하면 1D 후보가 표시됩니다.";
+      }
+
+      async function loadCandidate(l1, l3) {
+        candidateEl.textContent = "Loading candidate...";
+        const data = await post("/analyze/single", {
+          product_id: "P_ALPHA",
+          l1_feature_name: l1,
+          l3_item_name: l3,
+          max_allowed_loss_rate: 0.45,
+        });
+        const rows = data.candidate_specs.slice(0, 5);
+        candidateEl.innerHTML = `
+          <p><strong>${l1} -> ${l3}</strong> baseline ${data.baseline_ppm.toFixed(1)} ppm</p>
+          <table>
+            <thead><tr><th>Target</th><th>Loss</th><th>Residual ppm</th><th>Improve</th></tr></thead>
+            <tbody>
+              ${rows.map((row) => `<tr><td>${row.target.toFixed(2)}</td><td>${(row.production_loss * 100).toFixed(1)}%</td><td>${row.residual_ppm.toFixed(1)}</td><td>${row.ppm_improvement.toFixed(1)}</td></tr>`).join("")}
+            </tbody>
+          </table>
+        `;
+      }
+
+      document.querySelector("#load").addEventListener("click", () => {
+        loadRanking().catch((error) => {
+          statusEl.textContent = error.message;
+        });
+      });
+    </script>
+  </body>
+</html>
