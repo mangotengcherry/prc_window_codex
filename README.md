@@ -9,9 +9,21 @@ Vue3와 FastAPI로 만든 Process Window 분석 프로토타입입니다.
 - 제품, L1 Feature, L3 Item 선택
 - L3별 L1 우선순위 랭킹
 - Window 분석 차트
-- 월 생산량과 chip 단가를 반영한 Trade-off 분석
-- Multi L1 vs L3 교호작용 heatmap
+- 월 생산량과 chip 단가를 반영한 월 순효과 Trade-off 분석
+- Multi L1 vs L3 교호작용 heatmap과 hotspot 요약
 - FastAPI API와 Vue3 화면 분리
+
+## Trade-off 산식
+
+Trade-off 차트의 월 순효과는 아래 기준으로 계산합니다.
+
+```text
+월 순효과 = 불량 절감액 - 생산 손실액
+불량 절감액 = (baseline bad chip 가치 - SPEC 적용 후 residual bad chip 가치)
+생산 손실액 = 월 생산량 * production_loss * chip 단가
+```
+
+현재 프로토타입은 wafer 기준 production loss와 chip 기준 defect ppm을 함께 보여주기 때문에, 실제 운영 적용 전에는 재무팀/공정팀과 denominator를 다시 확인해야 합니다.
 
 ## 폴더 구조
 

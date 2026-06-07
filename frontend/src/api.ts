@@ -1,6 +1,6 @@
 import type { Catalog, InteractionAnalysis, SingleAnalysis } from "./types";
 
-const API_BASE = "http://127.0.0.1:8010/api";
+const API_BASE = import.meta.env.VITE_API_BASE ?? "http://127.0.0.1:8010/api";
 
 async function readData<T>(response: Response): Promise<T> {
   const payload = await response.json();

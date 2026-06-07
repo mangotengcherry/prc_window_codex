@@ -68,6 +68,10 @@ class PrototypeAnalysisTest(unittest.TestCase):
         )
 
         self.assertEqual(36, len(heatmap["cells"]))
+        self.assertEqual(6, heatmap["x_bin_count"])
+        self.assertEqual(6, heatmap["y_bin_count"])
+        self.assertIn("x_center", heatmap["cells"][0])
+        self.assertIn("y_center", heatmap["cells"][0])
         self.assertTrue(any(cell["unreliable"] for cell in heatmap["cells"]))
         self.assertTrue(any(cell["defect_ppm"] > 0 for cell in heatmap["cells"]))
 

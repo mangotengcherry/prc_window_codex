@@ -17,6 +17,10 @@ export type RankingRow = {
 };
 
 export type SingleAnalysis = {
+  product_id: string;
+  l1_feature_name: string;
+  l3_item_name: string;
+  analysis_population_wafers: number;
   baseline_ppm: number;
   bins: Array<Record<string, number | string>>;
   candidate_specs: Array<Record<string, number | null>>;
@@ -27,9 +31,17 @@ export type InteractionAnalysis = {
   l1_feature_x: string;
   l1_feature_y: string;
   l3_item_name: string;
+  x_bin_count: number;
+  y_bin_count: number;
   cells: Array<{
     x_bin: number;
     y_bin: number;
+    x_center: number;
+    y_center: number;
+    x_min: number;
+    x_max: number;
+    y_min: number;
+    y_max: number;
     wafer_count: number;
     defect_ppm: number;
     volume_share: number;
